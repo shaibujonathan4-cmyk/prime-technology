@@ -1,6 +1,7 @@
 const WHATSAPP_NUMBER = "2347019180094";
 
 function initForms() {
+  prefillNeed();
   document.querySelectorAll("form[data-inquiry]").forEach(form => {
     form.addEventListener("submit", async e => {
       e.preventDefault();
@@ -35,5 +36,13 @@ function initForms() {
       }
       btn.disabled = false;
     });
+  });
+}
+
+function prefillNeed() {
+  const need = new URLSearchParams(location.search).get("need");
+  if (!need) return;
+  document.querySelectorAll('select[name="need"]').forEach(s => {
+    if ([...s.options].some(o => o.value === need)) s.value = need;
   });
 }

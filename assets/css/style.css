@@ -39,7 +39,7 @@ h2 { font-size: 2.2rem; margin-bottom: 12px; }
 /* Hero */
 .hero { color: var(--white); padding: 120px 0;
   background: linear-gradient(105deg, rgba(8,69,44,.95) 40%, rgba(8,69,44,.55)),
-  url("/assets/images/hero/hero.jpg") center/cover no-repeat, var(--green-dark); }
+  url("https://images.unsplash.com/photo-1655874837055-7adc909ae602?w=1600") center/cover no-repeat, var(--green-dark); }
 .hero h1 { font-size: 3.2rem; max-width: 720px; margin-bottom: 20px; }
 .hero p { font-size: 1.15rem; max-width: 600px; margin-bottom: 32px; opacity: .92; }
 .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -193,3 +193,7 @@ dialog.lightbox::backdrop { background: rgba(0,0,0,.75); }
 .lb-prev, .lb-next { flex: none; background: #2a3236; color: #fff; border: 0; font-size: 1.6rem; line-height: 1;
   width: 44px; height: 44px; border-radius: 8px; cursor: pointer; }
 .lb-prev:hover, .lb-next:hover { background: var(--green); }
+
+/* Clickable cards */
+a.card { display: block; color: inherit; }
+a.card:hover h3 { color: var(--green); }
