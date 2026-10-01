@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us | Prime Industrial Technology Limited</title>
+  <meta name="description" content="Contact Prime Industrial Technology Limited in Bwari, FCT Nigeria for industrial equipment supply, hiring, leasing and maintenance.">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/responsive.css">
+</head>
+<body>
+
+<div data-include="/partials/header.html"></div>
+
+<main>
+  <section class="page-banner">
+    <div class="container">
+      <h1>Contact Us</h1>
+      <p>Tell us what you need and our team will get back to you.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container contact-grid">
+      <div class="contact-info">
+        <h2>Get In Touch</h2>
+        <ul>
+          <li><strong>Company</strong>Prime Industrial Technology Limited</li>
+          <li><strong>Address</strong>📍 No. 21, Freedom Street, Bwari, FCT Nigeria</li>
+          <li><strong>Phone</strong>
+            📞 <a href="tel:07019180094">07019180094</a><br>
+            📞 <a href="tel:07025913832">07025913832</a></li>
+          <li><strong>Email</strong>✉️ <a href="mailto:successful.pius15@gmail.com">successful.pius15@gmail.com</a></li>
+          <li><strong>WhatsApp</strong><a href="https://wa.me/2347019180094" target="_blank" rel="noopener">Chat with us</a></li>
+        </ul>
+        <!-- Once the address is confirmed, replace this box with a Google Maps <iframe> embed -->
+        <div class="map-box">Google Map goes here once the address is confirmed.</div>
+      </div>
+
+      <form class="form" data-inquiry>
+        <div class="row">
+          <div><label for="name">Name</label><input id="name" name="name" type="text" required></div>
+          <div><label for="company">Company</label><input id="company" name="company" type="text"></div>
+        </div>
+        <div class="row">
+          <div><label for="phone">Phone</label><input id="phone" name="phone" type="tel" required></div>
+          <div><label for="email">Email</label><input id="email" name="email" type="email"></div>
+        </div>
+        <div>
+          <label for="need">Equipment / Service Needed</label>
+          <select id="need" name="need" required>
+            <option value="">Select one</option>
+            <option>Machine Hiring</option>
+            <option>Equipment Leasing</option>
+            <option>Machine Supply</option>
+            <option>Installation</option>
+            <option>Servicing & Maintenance</option>
+            <option>Technical Support</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="5"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Inquiry</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<div data-include="/partials/footer.html"></div>
+
+<script src="/assets/js/nav.js"></script>
+<script src="/assets/js/form.js"></script>
+<script src="/assets/js/main.js"></script>
+</body>
+</html>

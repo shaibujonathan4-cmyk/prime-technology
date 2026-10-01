@@ -1,0 +1,12 @@
+:root {
+  --green: #0b5d3b;
+  --green-dark: #08452c;
+  --green-light: #2fa36b;
+  --white: #ffffff;
+  --charcoal: #222a2e;
+  --gray: #f3f5f4;
+  --muted: #5b6670;
+  --radius: 8px;
+  --max: 1200px;
+  --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}

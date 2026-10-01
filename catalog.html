@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Equipment Inventory | Prime Industrial Technology Limited</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand">
+        <div class="brand-badge">P</div>
+        <div>
+          <span class="brand-name">Prime Industrial</span>
+          <span class="brand-sub">Technology Limited</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="catalog.html" class="active">Equipment Inventory</a>
+        <a href="services.html">Services & Leasing</a>
+        <a href="contact.html">Contact & RFQ</a>
+      </nav>
+    </div>
+  </header>
+
+  <section style="padding: 40px 0;">
+    <div class="container">
+      <h1 style="font-size: 28px; margin-bottom: 10px;">Equipment Inventory & Procurement</h1>
+      <p style="color: var(--slate-600); margin-bottom: 30px;">Filter through heavy industrial units available for instant supply, short-term hire, or lease.</p>
+
+      <!-- Filter Controls -->
+      <div style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px; display: flex; gap: 15px; flex-wrap: wrap;">
+        <input type="text" id="searchInput" placeholder="Search equipment by name or keyword..." style="flex: 1; min-width: 200px; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+        <select id="categoryFilter" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+          <option value="all">All Categories</option>
+          <option value="packaging">Packaging & Bottling</option>
+          <option value="cooling">Cooling & Chillers</option>
+          <option value="processing">Food & Chemical Processing</option>
+        </select>
+      </div>
+
+      <!-- Equipment Grid -->
+      <div class="grid grid-3" id="equipmentGrid">
+        
+        <!-- Card 1 -->
+        <div class="card equipment-item" data-category="packaging">
+          <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
+          <span class="tag">Packaging</span>
+          <h3 style="font-size: 16px; margin: 8px 0;">Automatic Rotary Bottling & Capping Unit</h3>
+          <div style="font-size: 12px; color: var(--slate-600); background: var(--slate-50); padding: 8px; border-radius: 6px; margin-bottom: 15px;">
+            <div>Speed: <strong>3,000 Bottles/Hour</strong></div>
+            <div>Power: <strong>380V Industrial Phase</strong></div>
+          </div>
+          <button onclick="triggerWhatsAppQuote('Rotary Bottling & Capping Unit', 'PIT-BOT-01')" class="btn btn-primary btn-full">Request Quote & Specs</button>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card equipment-item" data-category="cooling">
+          <img src="https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
+          <span class="tag">Cooling</span>
+          <h3 style="font-size: 16px; margin: 8px 0;">50 HP Heavy Industrial Water Chiller</h3>
+          <div style="font-size: 12px; color: var(--slate-600); background: var(--slate-50); padding: 8px; border-radius: 6px; margin-bottom: 15px;">
+            <div>Capacity: <strong>120 kW Thermal Output</strong></div>
+            <div>Type: <strong>Air-Cooled Compact</strong></div>
+          </div>
+          <button onclick="triggerWhatsAppQuote('50 HP Industrial Chiller', 'PIT-CHL-02')" class="btn btn-primary btn-full">Request Quote & Specs</button>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card equipment-item" data-category="processing">
+          <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=600&q=80" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
+          <span class="tag">Processing</span>
+          <h3 style="font-size: 16px; margin: 8px 0;">Stainless Steel High-Shear Batch Mixer</h3>
+          <div style="font-size: 12px; color: var(--slate-600); background: var(--slate-50); padding: 8px; border-radius: 6px; margin-bottom: 15px;">
+            <div>Volume: <strong>500 Liters / Batch</strong></div>
+            <div>Grade: <strong>316 L Stainless Steel</strong></div>
+          </div>
+          <button onclick="triggerWhatsAppQuote('Batch Mixer 500L', 'PIT-MIX-03')" class="btn btn-primary btn-full">Request Quote & Specs</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <script src="js/main.js"></script>
+  <script>
+    // Real-Time Filter Script
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const items = document.querySelectorAll('.equipment-item');
+
+    function filterItems() {
+      const searchVal = searchInput.value.toLowerCase();
+      const catVal = categoryFilter.value;
+
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        const category = item.getAttribute('data-category');
+
+        const matchesSearch = text.includes(searchVal);
+        const matchesCategory = catVal === 'all' || category === catVal;
+
+        if (matchesSearch && matchesCategory) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    }
+
+    searchInput.addEventListener('input', filterItems);
+    categoryFilter.addEventListener('change', filterItems);
+  </script>
+</body>
+</html>
