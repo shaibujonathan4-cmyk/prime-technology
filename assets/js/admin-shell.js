@@ -75,7 +75,8 @@ function showShell(root, user, active, title) {
   const nav = [
     ["dashboard", "Dashboard", "/admin/index.html", icons.grid],
     ["inquiries", "Inquiries", "/admin/inquiries.html", icons.inbox],
-    ["equipment", "Equipment", "/admin/equipment.html", icons.box]
+    ["equipment", "Equipment", "/admin/equipment.html", icons.box],
+    ["projects", "Projects", "/admin/projects.html", icons.folder]
   ];
   document.title = title + " | Admin";
   root.innerHTML = `
@@ -117,3 +118,5 @@ export function initAdmin({ active, title, render }) {
     render(document.getElementById("adm-content"), user);
   });
 }
+
+icons.folder = svg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>');

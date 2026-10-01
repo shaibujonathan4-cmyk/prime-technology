@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Projects | Admin</title>
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body class="adm-body">
+<div id="app"></div>
+<script type="module">
+import { initAdmin, esc } from "/assets/js/admin-shell.js";
+import { db, CLOUDINARY } from "/assets/js/firebase-config.js";
+import { collection, addDoc, deleteDoc, updateDoc, doc, query, orderBy, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const SERVICES = ["Machine supply", "Machine hiring", "Equipment leasing", "Installation",
+  "Servicing and maintenance", "Technical support"];
+const MAX_PHOTOS = 8;
+const MAX_MB = 10;
+
+initAdmin({
+  active: "projects",
+  title: "Projects",
+  render(el) {
+    const $ = id => document.getElementById(id);
+    const cache = {};
+
+    el.innerHTML = `
+      <div class="eq">
+        <section class="panel">
+          <div class="panel-h">Add project</div>
+          <form id="form" class="pad">
+            <div class="field"><label for="p-title">Project title</label><input id="p-title" required></div>
+            <div class="field"><label for="p-client">Client <span class="hint">(optional, shown on the website)</span></label><input id="p-client"></div>
+            <div class="field"><label for="p-loc">Location</label><input id="p-loc" placeholder="Abuja, Nigeria"></div>
+            <div class="field"><label for="p-service">Service</label>
+              <select id="p-service"><option value="">Select a service</option>
+              ${SERVICES.map(s => `<option>${s}</option>`).join("")}</select></div>
+            <div class="field"><label for="p-date">Completed</label><input id="p-date" type="month"></div>
+            <div class="field"><label for="p-desc">Description</label><textarea id="p-desc" rows="4" required></textarea></div>
+            <div class="field"><label for="p-img">Photos</label><input id="p-img" type="file" accept="image/*" multiple required>
+              <span class="hint">Up to ${MAX_PHOTOS} photos, ${MAX_MB} MB each. The first photo is the cover.</span></div>
+            <label class="check"><input id="p-pub" type="checkbox" checked> Show on website</label>
+            <button class="btn btn-primary" id="save" type="submit">Save project</button>
+            <p class="note-status" id="msg" role="status"></p>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-h">Projects <span class="muted" id="count"></span></div>
+          <div id="plist"><div class="empty">Loading...</div></div>
+        </section>
+      </div>`;
+
+    async function upload(file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", CLOUDINARY.uploadPreset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("A photo could not be uploaded");
+      return (await res.json()).secure_url;
+    }
+
+    $("form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const files = [...$("p-img").files];
+      if (files.length > MAX_PHOTOS) { $("msg").textContent = `Choose ${MAX_PHOTOS} photos or fewer.`; return; }
+      const big = files.find(f => f.size > MAX_MB * 1024 * 1024);
+      if (big) { $("msg").textContent = `"${big.name}" is larger than ${MAX_MB} MB. Resize it and try again.`; return; }
+      $("save").disabled = true;
+      try {
+        const images = [];
+        for (let i = 0; i < files.length; i++) {
+          $("msg").textContent = `Uploading photo ${i + 1} of ${files.length}...`;
+          images.push(await upload(files[i]));
+        }
+        $("msg").textContent = "Saving...";
+        await addDoc(collection(db, "projects"), {
+          title: $("p-title").value.trim(),
+          client: $("p-client").value.trim(),
+          location: $("p-loc").value.trim(),
+          service: $("p-service").value,
+          completedOn: $("p-date").value,
+          description: $("p-desc").value.trim(),
+          images,
+          published: $("p-pub").checked,
+          createdAt: serverTimestamp()
+        });
+        $("form").reset();
+        $("p-pub").checked = true;
+        $("msg").textContent = "Project saved.";
+      } catch (err) {
+        console.error(err);
+        $("msg").textContent = "Could not save: " + err.message;
+      }
+      $("save").disabled = false;
+    });
+
+    onSnapshot(query(collection(db, "projects"), orderBy("createdAt", "desc")), snap => {
+      $("count").textContent = snap.size ? snap.size + " total" : "";
+      $("plist").innerHTML = snap.empty
+        ? '<div class="empty"><b>No projects yet</b>Add your first project using the form.</div>'
+        : snap.docs.map(d => {
+            const p = d.data();
+            cache[d.id] = p;
+            const n = (p.images || []).length;
+            const thumb = String((p.images || [])[0] || "").replace("/upload/", "/upload/w_120,h_120,c_fill,q_auto,f_auto/");
+            return `<div class="prow"><img src="${esc(thumb)}" alt="">
+              <div><b>${esc(p.title)}</b><br><small>${n} photo${n === 1 ? "" : "s"}${p.published ? "" : ' <span class="tag-hidden">Hidden from website</span>'}</small></div>
+              <div class="prow-actions">
+                <button type="button" class="btn" data-act="toggle" data-id="${d.id}">${p.published ? "Hide" : "Show"}</button>
+                <button type="button" class="btn btn-quiet-danger" data-act="del" data-id="${d.id}">Delete</button>
+              </div></div>`;
+          }).join("");
+    }, err => {
+      $("plist").innerHTML = `<div class="empty"><b>Could not load projects</b>${esc(err.message)}</div>`;
+    });
+
+    $("plist").addEventListener("click", async e => {
+      const b = e.target.closest("[data-act]");
+      if (!b) return;
+      const id = b.dataset.id;
+      try {
+        if (b.dataset.act === "toggle") {
+          await updateDoc(doc(db, "projects", id), { published: !cache[id].published });
+        } else if (confirm("Delete this project from the website?")) {
+          await deleteDoc(doc(db, "projects", id));
+        }
+      } catch (err) {
+        alert("That did not work. Check your connection and try again.");
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>

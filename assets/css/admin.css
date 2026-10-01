@@ -176,3 +176,15 @@ select.status-select { width: auto; padding: 9px 10px; font: inherit; font-weigh
   .d-body { padding: 16px 16px 48px; }
   .eq { grid-template-columns: 1fr; }
 }
+
+/* Project rows */
+.prow .prow-actions { flex: none; display: flex; gap: 6px; }
+.prow .prow-actions .btn { padding: 8px 12px; min-height: 36px; font-size: .88rem; }
+.tag-hidden { color: var(--new); font-weight: 600; }
+.hint { color: var(--sub); font-size: .82rem; }
+.check { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-weight: 600; }
+.check input { width: 20px; height: 20px; }
+@media (max-width: 600px) {
+  .prow { flex-wrap: wrap; }
+  .prow .prow-actions { width: 100%; padding-left: 70px; }
+}
