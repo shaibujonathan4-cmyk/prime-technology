@@ -161,3 +161,7 @@ h2 { font-size: 2.2rem; margin-bottom: 12px; }
 .admin-row small { color: var(--muted); }
 .btn-danger { background: #b3261e; border-color: #b3261e; color: var(--white); padding: 8px 14px; }
 .status { font-weight: 600; min-height: 24px; }
+
+/* Form feedback */
+.form-status { font-weight: 600; color: var(--green); }
+.form-status.error { color: #b3261e; }

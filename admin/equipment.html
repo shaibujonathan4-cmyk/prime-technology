@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Equipment | Admin</title>
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body class="adm-body">
+<div id="app"></div>
+<script type="module">
+import { initAdmin, esc } from "/assets/js/admin-shell.js";
+import { db, CLOUDINARY, CATEGORIES } from "/assets/js/firebase-config.js";
+import { collection, addDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+initAdmin({
+  active: "equipment",
+  title: "Equipment",
+  render(el) {
+    const $ = id => document.getElementById(id);
+    el.innerHTML = `
+      <div class="eq">
+        <section class="panel">
+          <div class="panel-h">Add equipment</div>
+          <form id="form" class="pad">
+            <div class="field"><label for="p-name">Name</label><input id="p-name" required></div>
+            <div class="field"><label for="p-cat">Category</label>
+              <select id="p-cat" required><option value="">Select a category</option>
+              ${Object.entries(CATEGORIES).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div>
+            <div class="field"><label for="p-desc">Description</label><textarea id="p-desc" rows="4" required></textarea></div>
+            <div class="field"><label for="p-img">Photo</label><input id="p-img" type="file" accept="image/*" required></div>
+            <button class="btn btn-primary" id="save" type="submit">Save equipment</button>
+            <p class="note-status" id="msg" role="status"></p>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="panel-h">Listed equipment <span class="muted" id="count"></span></div>
+          <div id="plist"><div class="empty">Loading...</div></div>
+        </section>
+      </div>`;
+
+    async function upload(file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", CLOUDINARY.uploadPreset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("The photo could not be uploaded");
+      return (await res.json()).secure_url;
+    }
+
+    $("form").addEventListener("submit", async e => {
+      e.preventDefault();
+      $("save").disabled = true;
+      $("msg").textContent = "Uploading photo...";
+      try {
+        const imageUrl = await upload($("p-img").files[0]);
+        $("msg").textContent = "Saving...";
+        await addDoc(collection(db, "products"), {
+          name: $("p-name").value.trim(),
+          category: $("p-cat").value,
+          description: $("p-desc").value.trim(),
+          imageUrl,
+          createdAt: serverTimestamp()
+        });
+        $("form").reset();
+        $("msg").textContent = "Equipment saved. It is now on the website.";
+      } catch (err) {
+        console.error(err);
+        $("msg").textContent = "Could not save: " + err.message;
+      }
+      $("save").disabled = false;
+    });
+
+    onSnapshot(query(collection(db, "products"), orderBy("createdAt", "desc")), snap => {
+      $("count").textContent = snap.size ? snap.size + " items" : "";
+      $("plist").innerHTML = snap.empty
+        ? '<div class="empty"><b>No equipment yet</b>Add your first machine using the form.</div>'
+        : snap.docs.map(d => {
+            const p = d.data();
+            const thumb = String(p.imageUrl || "").replace("/upload/", "/upload/w_120,h_120,c_fill,q_auto,f_auto/");
+            return `<div class="prow"><img src="${esc(thumb)}" alt="">
+              <div><b>${esc(p.name)}</b><br><small>${esc(CATEGORIES[p.category] || p.category)}</small></div>
+              <button type="button" class="btn btn-quiet-danger" data-id="${d.id}">Delete</button></div>`;
+          }).join("");
+    }, err => {
+      $("plist").innerHTML = `<div class="empty"><b>Could not load equipment</b>${esc(err.message)}</div>`;
+    });
+
+    $("plist").addEventListener("click", async e => {
+      const id = e.target.dataset.id;
+      if (!id || !confirm("Delete this equipment from the website?")) return;
+      try { await deleteDoc(doc(db, "products", id)); }
+      catch (err) { alert("Could not delete. Check your connection and try again."); }
+    });
+  }
+});
+</script>
+</body>
+</html>

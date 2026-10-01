@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Dashboard | Admin</title>
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body class="adm-body">
+<div id="app"></div>
+<script type="module">
+import { initAdmin, esc, inquiryRow } from "/assets/js/admin-shell.js";
+import { db } from "/assets/js/firebase-config.js";
+import { collection, query, orderBy, onSnapshot, getDocs }
+  from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+initAdmin({
+  active: "dashboard",
+  title: "Dashboard",
+  render(el) {
+    const h = new Date().getHours();
+    const hello = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    el.innerHTML = `
+      <div class="page-head"><h2>${hello}</h2><p>Here is where your inquiries and equipment stand.</p></div>
+      <div class="stats">
+        <a class="stat" href="/admin/inquiries.html?f=new"><b id="s-new">-</b><span>New inquiries</span></a>
+        <a class="stat" href="/admin/inquiries.html"><b id="s-prog">-</b><span>In progress</span></a>
+        <a class="stat" href="/admin/inquiries.html?f=won"><b id="s-won">-</b><span>Won</span></a>
+        <a class="stat" href="/admin/equipment.html"><b id="s-prod">-</b><span>Equipment listed</span></a>
+      </div>
+      <div class="panel" style="margin-top:20px">
+        <div class="panel-h">Latest inquiries <a class="link" href="/admin/inquiries.html">View all</a></div>
+        <div id="recent"><div class="empty">Loading...</div></div>
+      </div>`;
+    const set = (id, v) => { document.getElementById(id).textContent = v; };
+    onSnapshot(query(collection(db, "inquiries"), orderBy("createdAt", "desc")), snap => {
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const n = s => all.filter(x => x.status === s).length;
+      set("s-new", n("new"));
+      set("s-prog", n("contacted") + n("quoted"));
+      set("s-won", n("won"));
+      document.getElementById("recent").innerHTML = all.length
+        ? all.slice(0, 5).map(x => inquiryRow(x, { href: "/admin/inquiries.html?id=" + x.id })).join("")
+        : '<div class="empty"><b>No inquiries yet</b>New contact and quote requests will appear here.</div>';
+    }, err => {
+      document.getElementById("recent").innerHTML = `<div class="empty"><b>Could not load inquiries</b>${esc(err.message)}</div>`;
+    });
+    getDocs(collection(db, "products")).then(s => set("s-prod", s.size)).catch(() => {});
+  }
+});
+</script>
+</body>
+</html>

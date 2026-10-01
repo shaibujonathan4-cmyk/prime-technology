@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Inquiries | Admin</title>
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body class="adm-body">
+<div id="app"></div>
+<script type="module">
+import { initAdmin, esc, fullDate, STATUSES, inquiryRow, icons } from "/assets/js/admin-shell.js";
+import { db } from "/assets/js/firebase-config.js";
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const params = new URLSearchParams(location.search);
+
+initAdmin({
+  active: "inquiries",
+  title: "Inquiries",
+  render(el) {
+    let items = [];
+    let selected = params.get("id");
+    let filter = params.get("f") || "all";
+    let q = "";
+    const $ = id => document.getElementById(id);
+
+    el.innerHTML = `
+      <div class="split" id="split">
+        <section class="panel list-panel">
+          <div class="list-tools">
+            <div class="field"><input id="q" type="search" placeholder="Search name, company, phone or message" aria-label="Search inquiries"></div>
+            <div class="chips" id="chips"></div>
+          </div>
+          <div class="list-scroll" id="list"></div>
+        </section>
+        <section class="panel detail-panel" id="detail"></section>
+      </div>`;
+
+    function renderChips() {
+      const count = k => k === "all" ? items.length : items.filter(x => x.status === k).length;
+      $("chips").innerHTML = [["all", "All"], ...STATUSES].map(([k, l]) =>
+        `<button type="button" class="chip ${filter === k ? "on" : ""}" data-f="${k}">${l}<span>${count(k)}</span></button>`).join("");
+    }
+
+    function visible() {
+      const s = q.trim().toLowerCase();
+      return items.filter(x => (filter === "all" || x.status === filter) &&
+        (!s || [x.name, x.company, x.phone, x.email, x.need, x.message].join(" ").toLowerCase().includes(s)));
+    }
+
+    function renderList() {
+      renderChips();
+      const v = visible();
+      $("list").innerHTML = !items.length
+        ? '<div class="empty"><b>No inquiries yet</b>When someone sends the contact or quote form, it will appear here.</div>'
+        : !v.length
+          ? '<div class="empty"><b>Nothing matches</b>Try another status or a different search.</div>'
+          : v.map(x => inquiryRow(x, { selected: x.id === selected })).join("");
+    }
+
+    function renderDetail() {
+      const x = items.find(i => i.id === selected);
+      const d = $("detail");
+      const split = $("split");
+      if (!x) {
+        split.classList.remove("open");
+        d.innerHTML = '<div class="empty" style="padding:80px 20px"><b>Select an inquiry</b>Its details and contact options will show here.</div>';
+        return;
+      }
+      split.classList.add("open");
+      const digits = String(x.phone || "").replace(/\D/g, "");
+      const waNumber = digits ? (digits.startsWith("0") ? "234" + digits.slice(1) : digits) : "";
+      const greet = encodeURIComponent(`Hello ${x.name}, this is Prime Industrial Technology Limited. Thank you for your inquiry${x.need ? " about " + x.need : ""}.`);
+      d.innerHTML = `
+        <div class="d-head">
+          <button type="button" class="btn d-back" id="back" aria-label="Back to inquiries">${icons.back}</button>
+          <div class="d-title"><h2>${esc(x.name)}</h2><p>${esc(x.company || "No company given")}</p></div>
+          <select id="status" class="status-select" data-s="${esc(x.status)}" aria-label="Status">
+            ${STATUSES.map(([k, l]) => `<option value="${k}" ${k === x.status ? "selected" : ""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="d-body">
+          <div class="actions">
+            ${waNumber ? `<a class="btn btn-primary" href="https://wa.me/${waNumber}?text=${greet}" target="_blank" rel="noopener">${icons.chat}WhatsApp</a>` : ""}
+            ${x.phone ? `<a class="btn" href="tel:${esc(String(x.phone).replace(/[^\d+]/g, ""))}">${icons.phone}Call</a>` : ""}
+            ${x.email ? `<a class="btn" href="mailto:${esc(x.email)}">${icons.mail}Email</a>` : ""}
+          </div>
+          <div>
+            <h3>Request</h3>
+            <dl class="facts">
+              <dt>Service</dt><dd>${esc(x.need || "Not specified")}</dd>
+              <dt>Phone</dt><dd>${esc(x.phone || "Not given")}</dd>
+              <dt>Email</dt><dd>${esc(x.email || "Not given")}</dd>
+              <dt>Received</dt><dd>${fullDate(x.createdAt)}</dd>
+              <dt>Sent from</dt><dd>${x.source === "quote" ? "Request a quote page" : "Contact page"}</dd>
+            </dl>
+          </div>
+          <div><h3>Message</h3><div class="msg">${esc(x.message || "No message was written.")}</div></div>
+          <div>
+            <h3>Your notes</h3>
+            <textarea id="notes" rows="4" placeholder="Add what you agreed, prices discussed or next steps">${esc(x.notes || "")}</textarea>
+            <p class="note-status" id="note-status">Notes save when you tap outside the box.</p>
+          </div>
+          <div><button type="button" class="btn btn-quiet-danger" id="del">Delete inquiry</button></div>
+        </div>`;
+    }
+
+    $("q").addEventListener("input", e => { q = e.target.value; renderList(); });
+    $("chips").addEventListener("click", e => {
+      const b = e.target.closest("[data-f]");
+      if (!b) return;
+      filter = b.dataset.f;
+      renderList();
+    });
+    $("list").addEventListener("click", e => {
+      const r = e.target.closest("[data-id]");
+      if (!r) return;
+      selected = r.dataset.id;
+      history.replaceState(null, "", "?id=" + selected);
+      renderList();
+      renderDetail();
+      $("detail").scrollTop = 0;
+    });
+    $("detail").addEventListener("click", async e => {
+      if (e.target.closest("#back")) {
+        selected = null;
+        history.replaceState(null, "", location.pathname);
+        renderList();
+        renderDetail();
+        return;
+      }
+      if (e.target.closest("#del")) {
+        if (!confirm("Delete this inquiry? This cannot be undone.")) return;
+        const id = selected;
+        selected = null;
+        renderDetail();
+        try { await deleteDoc(doc(db, "inquiries", id)); }
+        catch (err) { alert("Could not delete the inquiry. Check your connection and try again."); }
+      }
+    });
+    $("detail").addEventListener("change", async e => {
+      if (e.target.id !== "status") return;
+      e.target.dataset.s = e.target.value;
+      try {
+        await updateDoc(doc(db, "inquiries", selected), { status: e.target.value, updatedAt: serverTimestamp() });
+      } catch (err) {
+        alert("Could not change the status. Check your connection and try again.");
+      }
+    });
+    $("detail").addEventListener("focusout", async e => {
+      if (e.target.id !== "notes") return;
+      const x = items.find(i => i.id === selected);
+      const say = t => { const n = $("note-status"); if (n) n.textContent = t; };
+      if (!x || (x.notes || "") === e.target.value) return;
+      say("Saving...");
+      try {
+        await updateDoc(doc(db, "inquiries", selected), { notes: e.target.value.slice(0, 4000), updatedAt: serverTimestamp() });
+        say("Notes saved.");
+      } catch (err) {
+        say("Could not save the notes. Check your connection and try again.");
+      }
+    });
+
+    onSnapshot(query(collection(db, "inquiries"), orderBy("createdAt", "desc")), snap => {
+      items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (selected && !items.some(i => i.id === selected)) selected = null;
+      renderList();
+      if (document.activeElement?.id !== "notes") renderDetail();
+    }, err => {
+      $("list").innerHTML = `<div class="empty"><b>Could not load inquiries</b>${esc(err.message)}</div>`;
+    });
+  }
+});
+</script>
+</body>
+</html>
