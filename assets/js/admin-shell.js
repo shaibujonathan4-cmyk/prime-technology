@@ -76,7 +76,8 @@ function showShell(root, user, active, title) {
     ["dashboard", "Dashboard", "/admin/index.html", icons.grid],
     ["inquiries", "Inquiries", "/admin/inquiries.html", icons.inbox],
     ["equipment", "Equipment", "/admin/equipment.html", icons.box],
-    ["projects", "Projects", "/admin/projects.html", icons.folder]
+    ["projects", "Projects", "/admin/projects.html", icons.folder],
+    ["website", "Website", "/admin/website.html", icons.image]
   ];
   document.title = title + " | Admin";
   root.innerHTML = `
@@ -120,3 +121,5 @@ export function initAdmin({ active, title, render }) {
 }
 
 icons.folder = svg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>');
+
+icons.image = svg('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>');

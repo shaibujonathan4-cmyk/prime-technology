@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Website | Admin</title>
+  <link rel="stylesheet" href="/assets/css/reset.css">
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+</head>
+<body class="adm-body">
+<div id="app"></div>
+<script type="module">
+import { initAdmin, esc } from "/assets/js/admin-shell.js";
+import { db, CLOUDINARY } from "/assets/js/firebase-config.js";
+import { doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const MAX_MB = 10;
+const SLOTS = [
+  { key: "heroImage", title: "Homepage hero image",
+    note: "A wide landscape photo behind the main headline. A green tint is added so the text stays readable." },
+  { key: "aboutImage", title: "About image",
+    note: "Shown beside \"Your Industrial Equipment Partner\" on the homepage and the About page. A square or portrait photo works best." }
+];
+const sized = (url, w) => String(url || "").replace("/upload/", `/upload/w_${w},q_auto,f_auto/`);
+
+initAdmin({
+  active: "website",
+  title: "Website",
+  async render(el) {
+    const $ = id => document.getElementById(id);
+    let data = {};
+    try {
+      const snap = await getDoc(doc(db, "settings", "site"));
+      data = snap.exists() ? snap.data() : {};
+    } catch (err) {
+      el.innerHTML = `<div class="empty"><b>Could not load settings</b>${esc(err.message)}</div>`;
+      return;
+    }
+
+    function paint() {
+      el.innerHTML = `
+        <div class="page-head"><h2>Website images</h2><p>Change the main photos on the public site. Changes show on the website within moments.</p></div>
+        <div class="web-grid">
+          ${SLOTS.map(s => {
+            const url = data[s.key];
+            return `<section class="panel">
+              <div class="panel-h">${s.title}</div>
+              <div class="pad">
+                <div class="preview">${url ? `<img src="${esc(sized(url, 700))}" alt="">` : '<div class="empty">Using the default image</div>'}</div>
+                <p class="hint" style="margin:12px 0">${s.note}</p>
+                <div class="field"><label for="f-${s.key}">Choose a new photo</label><input id="f-${s.key}" type="file" accept="image/*"></div>
+                <div class="actions">
+                  <button type="button" class="btn btn-primary" data-act="save" data-key="${s.key}">Save image</button>
+                  ${url ? `<button type="button" class="btn" data-act="reset" data-key="${s.key}">Use default image</button>` : ""}
+                </div>
+                <p class="note-status" id="m-${s.key}" role="status"></p>
+              </div>
+            </section>`;
+          }).join("")}
+        </div>`;
+    }
+    paint();
+
+    async function upload(file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", CLOUDINARY.uploadPreset);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY.cloudName}/image/upload`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("The photo could not be uploaded");
+      return (await res.json()).secure_url;
+    }
+
+    el.addEventListener("click", async e => {
+      const b = e.target.closest("[data-act]");
+      if (!b) return;
+      const key = b.dataset.key;
+      const say = t => { const m = $("m-" + key); if (m) m.textContent = t; };
+      try {
+        if (b.dataset.act === "reset") {
+          if (!confirm("Go back to the default image?")) return;
+          await setDoc(doc(db, "settings", "site"), { [key]: "", updatedAt: serverTimestamp() }, { merge: true });
+          data[key] = "";
+          paint();
+          say("Default image restored.");
+          return;
+        }
+        const file = $("f-" + key).files[0];
+        if (!file) return say("Choose a photo first.");
+        if (file.size > MAX_MB * 1024 * 1024) return say(`That photo is larger than ${MAX_MB} MB. Resize it and try again.`);
+        b.disabled = true;
+        say("Uploading photo...");
+        const url = await upload(file);
+        say("Saving...");
+        await setDoc(doc(db, "settings", "site"), { [key]: url, updatedAt: serverTimestamp() }, { merge: true });
+        data[key] = url;
+        paint();
+        say("Image saved. It is now on the website.");
+      } catch (err) {
+        console.error(err);
+        say("Could not save: " + err.message);
+        b.disabled = false;
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
